@@ -524,6 +524,7 @@ pub fn all_args_and_flags() -> Vec<RGArg> {
     flag_max_depth(&mut args);
     flag_max_filesize(&mut args);
     flag_mmap(&mut args);
+    flag_multiline(&mut args);
     flag_no_config(&mut args);
     flag_no_ignore(&mut args);
     flag_no_ignore_messages(&mut args);
@@ -1192,6 +1193,24 @@ This flag overrides --mmap.
     let arg = RGArg::switch("no-mmap")
         .help(NO_SHORT).long_help(NO_LONG)
         .overrides("mmap");
+    args.push(arg);
+}
+
+fn flag_multiline(args: &mut Vec<RGArg>) {
+    const SHORT: &str = "Enable matching across multiple lines.";
+    const LONG: &str = long!("\
+Enable matching across multiple lines.
+
+This flag can be disabled with --no-multiline.
+");
+    let arg = RGArg::switch("multiline")
+        .help(SHORT).long_help(LONG)
+        .overrides("no-multiline");
+    args.push(arg);
+
+    let arg = RGArg::switch("no-multiline")
+        .hidden()
+        .overrides("multiline");
     args.push(arg);
 }
 

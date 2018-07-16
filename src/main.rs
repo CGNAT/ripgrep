@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports, unused_variables)]
+
 extern crate atty;
 extern crate bytecount;
 #[macro_use]
@@ -5,6 +7,9 @@ extern crate clap;
 extern crate encoding_rs;
 extern crate globset;
 extern crate grep;
+extern crate grep2;
+extern crate grep_printer;
+extern crate grep_regex;
 extern crate ignore;
 #[macro_use]
 extern crate lazy_static;
@@ -79,7 +84,7 @@ fn run(args: Arc<Args>) -> Result<u64> {
     } else if args.type_list() {
         run_types(&args)
     } else if threads == 1 || args.is_one_path() {
-        run_one_thread(&args)
+        run_one_thread2(&args)
     } else {
         run_parallel(&args)
     }
@@ -161,6 +166,51 @@ fn run_parallel(args: &Arc<Args>) -> Result<u64> {
         );
     }
     Ok(match_line_count)
+}
+
+fn run_one_thread2(args: &Arc<Args>) -> Result<u64> {
+    use std::io;
+
+    let start_time = Instant::now();
+    let matcher = args.matcher2();
+    let mut stdout = args.stdout();
+    let mut searcher = args.searcher2()?;
+    let mut paths_searched: u64 = 0;
+    let mut found_match = false;
+    for result in args.walker() {
+        let dent = match get_or_log_dir_entry(
+            result,
+            args.stdout_handle(),
+            args.files(),
+            args.no_messages(),
+            args.no_ignore_messages(),
+        ) {
+            None => continue,
+            Some(dent) => dent,
+        };
+        let mut printer = args.printer2(&mut stdout);
+        if args.quiet() && found_match {
+            break;
+        }
+        paths_searched += 1;
+        let count =
+            if dent.is_stdin() {
+                let stdin = io::stdin();
+                let stdin = stdin.lock();
+                let mut sink = printer.sink(&matcher);
+                searcher.search_reader(&matcher, stdin, &mut sink)?;
+                found_match = found_match || sink.has_match();
+            } else {
+                unimplemented!()
+                // worker.run(&mut printer, Work::DirEntry(dent))
+            };
+    }
+    if !args.paths().is_empty() && paths_searched == 0 {
+        if !args.no_messages() {
+            eprint_nothing_searched();
+        }
+    }
+    Ok(if found_match { 1 } else { 0 })
 }
 
 fn run_one_thread(args: &Arc<Args>) -> Result<u64> {

@@ -43,6 +43,9 @@ bytecount = "0.3.1"
 encoding_rs = "0.7"
 globset = { version = "0.4.0", path = "globset" }
 grep = { version = "0.1.8", path = "grep" }
+grep2 = { version = "*", path = "grep2" }
+grep-printer = { version = "*", path = "grep-printer" }
+grep-regex = { version = "*", path = "grep-regex" }
 ignore = { version = "0.4.0", path = "ignore" }
 lazy_static = "1"
 libc = "0.2"
